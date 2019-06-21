@@ -1,97 +1,79 @@
-import { $, toJQuery } from '../util/index';
+import FlexBug from '../mixin/flex-bug';
+import {getRows} from './margin';
+import {$$, boxModelAdjust, css, offset, toFloat} from 'uikit-util';
 
-export default function (UIkit) {
+export default {
 
-    UIkit.component('height-match', {
+    mixins: [FlexBug],
 
-        args: 'target',
+    args: 'target',
 
-        props: {
-            target: String,
-            row: Boolean
-        },
+    props: {
+        target: String,
+        row: Boolean
+    },
 
-        defaults: {
-            target: '> *',
-            row: true
-        },
+    data: {
+        target: '> *',
+        row: true,
+        forceHeight: true
+    },
 
-        update: {
+    computed: {
 
-            write() {
-
-                let elements = toJQuery(this.target, this.$el).css('min-height', '');
-
-                if (!this.row) {
-                    this.match(elements);
-                    return this;
-                }
-
-                var lastOffset = false, group = [];
-
-                elements.each((i, el) => {
-
-                    el = $(el);
-
-                    var offset = el.offset().top;
-
-                    if (offset != lastOffset && group.length) {
-                        this.match($(group));
-                        group = [];
-                        offset = el.offset().top;
-                    }
-
-                    group.push(el);
-                    lastOffset = offset;
-                });
-
-                if (group.length) {
-                    this.match($(group));
-                }
-
-            },
-
-            events: ['resize', 'orientationchange']
-
-        },
-
-        methods: {
-
-            match(elements) {
-
-                if (elements.length < 2) {
-                    return;
-                }
-
-                var max = 0;
-
-                elements
-                    .each((i, el) => {
-
-                        el = $(el);
-
-                        var height;
-
-                        if (el.css('display') === 'none') {
-                            var style = el.attr('style');
-                            el.attr('style', `${style};display:block !important;`);
-                            height = el.outerHeight();
-                            el.attr('style', style || '');
-                        } else {
-                            height = el.outerHeight();
-                        }
-
-                        max = Math.max(max, height);
-
-                    })
-                    .each((i, el) => {
-                        el = $(el);
-                        el.css('min-height', `${max - (el.outerHeight() - parseFloat(el.css('height')))}px`);
-                    });
-            }
-
+        elements({target}, $el) {
+            return $$(target, $el);
         }
 
-    });
+    },
 
+    update: {
+
+        read() {
+            return {
+                rows: (this.row ? getRows(this.elements) : [this.elements]).map(match)
+            };
+        },
+
+        write({rows}) {
+            rows.forEach(({heights, elements}) =>
+                elements.forEach((el, i) =>
+                    css(el, 'minHeight', heights[i])
+                )
+            );
+        },
+
+        events: ['resize']
+
+    }
+
+};
+
+function match(elements) {
+
+    if (elements.length < 2) {
+        return {heights: [''], elements};
+    }
+
+    let {heights, max} = getHeights(elements);
+    const hasMinHeight = elements.some(el => el.style.minHeight);
+    const hasShrunk = elements.some((el, i) => !el.style.minHeight && heights[i] < max);
+
+    if (hasMinHeight && hasShrunk) {
+        css(elements, 'minHeight', '');
+        ({heights, max} = getHeights(elements));
+    }
+
+    heights = elements.map((el, i) =>
+        heights[i] === max && toFloat(el.style.minHeight).toFixed(2) !== max.toFixed(2) ? '' : max
+    );
+
+    return {heights, elements};
+}
+
+function getHeights(elements) {
+    const heights = elements.map(el => offset(el).height - boxModelAdjust('height', el, 'content-box'));
+    const max = Math.max.apply(null, heights);
+
+    return {heights, max};
 }

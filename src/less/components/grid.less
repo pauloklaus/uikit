@@ -16,6 +16,8 @@
 //                  `uk-grid-margin-large`
 //                  `uk-grid-margin-collapse`
 //
+// Sub-modifier:    `uk-grid-item-match`
+//
 // States:          `uk-first-column`
 //
 // ========================================================================
@@ -50,16 +52,12 @@
 
 /*
  * 1. Allow cells to wrap into the next line
- * 2. Reset lists
+ * 2. Reset list
  */
 
 .uk-grid {
-    display: -ms-flexbox;
-    display: -webkit-flex;
     display: flex;
     /* 1 */
-    -ms-flex-wrap: wrap;
-    -webkit-flex-wrap: wrap;
     flex-wrap: wrap;
     /* 2 */
     margin: 0;
@@ -321,23 +319,19 @@
  * 3. Expand width even if larger than 100%, e.g. because of negative margin (Needed for nested grids)
  */
 
-.uk-grid-match > * {
-    display: -ms-flexbox;
-    display: -webkit-flex;
+.uk-grid-match > *,
+.uk-grid-item-match {
     display: flex;
     /* 1 */
-    -ms-flex-wrap: wrap;
-    -webkit-flex-wrap: wrap;
     flex-wrap: wrap;
 }
 
-.uk-grid-match > * > *:not([class*='uk-width']) {
+.uk-grid-match > * > :not([class*='uk-width']),
+.uk-grid-item-match > :not([class*='uk-width']) {
     /* 2 */
     box-sizing: border-box;
     width: 100%;
     /* 3 */
-    -ms-flex: auto;
-    -webkit-flex: auto;
     flex: auto;
 }
 

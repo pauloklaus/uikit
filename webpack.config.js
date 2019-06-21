@@ -1,32 +1,94 @@
-var webpack = require('webpack');
-var glob = require('glob');
-var path = require('path');
-var exec = require('child_process').exec;
+/* eslint-env node */
+const {resolve} = require('path');
+const webpack = require('webpack');
+const {icons} = require('./build/util');
+const {version} = require('./package.json');
+const circular = require('circular-dependency-plugin');
 
-var loaders = {
-    loaders: [
-        {loader: 'buble-loader', test: /(src|tests)(\/|\\).*\.js$/},
-        {loader: 'json-loader', test: /\.json/}
+const rules = {
+    rules: [
+        {
+            test: /\.svg$/,
+            use: 'raw-loader'
+        }
     ]
 };
-
-var components = {};
-glob.sync('./src/js/components/**/*.js').forEach(file => components[path.basename(file, '.js')] = file.substring(0, file.length - 3));
 
 module.exports = [
 
     {
-        entry: './tests/js/uikit',
+        entry: './src/js/uikit',
         output: {
-            filename: 'dist/js/uikit-core.js',
+            path: __dirname,
+            filename: 'dist/js/uikit.js',
             library: 'UIkit',
+            libraryExport: 'default',
             libraryTarget: 'umd'
         },
-        module: loaders,
-        externals: {jquery: 'jQuery'},
+        mode: 'development',
+        module: rules,
         plugins: [
-            new BuildAll()
-        ]
+            new circular(),
+            new webpack.DefinePlugin({
+                BUNDLED: true,
+                VERSION: `'${version}'`
+            }),
+            new webpack.optimize.ModuleConcatenationPlugin()
+        ],
+        resolve: {
+            alias: {
+                'uikit-util': resolve(__dirname, 'src/js/util')
+            }
+        }
+    },
+
+    {
+        entry: './src/js/uikit',
+        output: {
+            path: __dirname,
+            filename: 'dist/js/uikit.min.js',
+            library: 'UIkit',
+            libraryExport: 'default',
+            libraryTarget: 'umd'
+        },
+        mode: 'production',
+        module: rules,
+        plugins: [
+            new circular(),
+            new webpack.DefinePlugin({
+                BUNDLED: true,
+                VERSION: `'${version}'`
+            }),
+            new webpack.optimize.ModuleConcatenationPlugin()
+        ],
+        resolve: {
+            alias: {
+                'uikit-util': resolve(__dirname, 'src/js/util')
+            }
+        }
+    },
+
+    {
+        entry: './src/js/icons',
+        output: {
+            path: __dirname,
+            filename: 'dist/js/uikit-icons.js',
+            library: 'UIkitIcons',
+            libraryExport: 'default',
+            libraryTarget: 'umd'
+        },
+        mode: 'development',
+        module: rules,
+        plugins: [
+            new webpack.DefinePlugin({
+                ICONS: icons('src/images/icons/*.svg')
+            })
+        ],
+        resolve: {
+            alias: {
+                'icons$': resolve(__dirname, 'dist/icons.json'),
+            }
+        }
     },
 
     {
@@ -34,28 +96,16 @@ module.exports = [
             index: './tests/js/index'
         },
         output: {
+            path: __dirname,
             filename: 'tests/js/test.js'
         },
-        module: loaders,
-        externals: {jquery: 'jQuery', uikit: 'UIkit'}
-    },
-
-    {
-        entry: components,
-        output: {
-            filename: 'dist/js/components/[name].js'
-        },
-        module: loaders,
-        externals: {jquery: 'jQuery', uikit: 'UIkit'},
-        plugins: [
-            new BuildAll()
-        ]
+        mode: 'development',
+        externals: {uikit: 'UIkit'},
+        resolve: {
+            alias: {
+                'uikit-util': resolve(__dirname, 'src/js/util')
+            }
+        }
     }
 
 ];
-
-function BuildAll(options) {}
-
-BuildAll.prototype.apply = compiler =>
-    compiler.plugin('done', () =>
-        exec('node build/all'));

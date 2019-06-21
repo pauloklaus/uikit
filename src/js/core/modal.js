@@ -1,184 +1,157 @@
-import { Class, Modal } from '../mixin/index';
-import { $, docElement, extend, isFunction, isString, promise, query, toJQuery } from '../util/index';
+import Modal from '../mixin/modal';
+import {$, addClass, assign, css, hasClass, height, html, isString, on, Promise, removeClass} from 'uikit-util';
 
-export default function (UIkit) {
+export default {
 
-    UIkit.component('modal', {
+    install,
 
-        mixins: [Modal],
+    mixins: [Modal],
 
-        props: {
-            center: Boolean,
-            container: Boolean
-        },
+    data: {
+        clsPage: 'uk-modal-page',
+        selPanel: '.uk-modal-dialog',
+        selClose: '.uk-modal-close, .uk-modal-close-default, .uk-modal-close-outside, .uk-modal-close-full'
+    },
 
-        defaults: {
-            center: false,
-            clsPage: 'uk-modal-page',
-            clsPanel: 'uk-modal-dialog',
-            selClose: '.uk-modal-close, .uk-modal-close-default, .uk-modal-close-outside, .uk-modal-close-full',
-            container: true
-        },
+    events: [
 
-        init() {
+        {
+            name: 'show',
 
-            this.container = this.container === true && UIkit.container || this.container && toJQuery(this.container);
+            self: true,
 
-            if (this.container && !this.$el.parent().is(this.container)) {
-                this.$el.appendTo(this.container);
+            handler() {
+
+                if (hasClass(this.panel, 'uk-margin-auto-vertical')) {
+                    addClass(this.$el, 'uk-flex');
+                } else {
+                    css(this.$el, 'display', 'block');
+                }
+
+                height(this.$el); // force reflow
             }
-
         },
 
-        update: {
+        {
+            name: 'hidden',
 
-            write() {
+            self: true,
 
-                if (this.$el.css('display') === 'block' && this.center) {
-                    this.$el
-                        .removeClass('uk-flex uk-flex-center uk-flex-middle')
-                        .css('display', 'block')
-                        .toggleClass('uk-flex uk-flex-center uk-flex-middle', window.innerHeight > this.panel.outerHeight(true))
-                        .css('display', this.$el.hasClass('uk-flex') ? '' : 'block');
-                }
+            handler() {
 
-            },
+                css(this.$el, 'display', '');
+                removeClass(this.$el, 'uk-flex');
 
-            events: ['resize', 'orientationchange']
-
-        },
-
-        events: {
-
-            beforeshow(e) {
-
-                if (!this.$el.is(e.target)) {
-                    return;
-                }
-
-                docElement.addClass(this.clsPage);
-                this.$el.css('display', 'block');
-                this.$el.height();
-            },
-
-            hide(e) {
-
-                if (!this.$el.is(e.target)) {
-                    return;
-                }
-
-                if (!this.getActive()) {
-                    docElement.removeClass(this.clsPage);
-                }
-
-                this.$el.css('display', '').removeClass('uk-flex uk-flex-center uk-flex-middle');
             }
-
         }
 
-    });
+    ]
 
-    UIkit.component('overflow-auto', {
+};
 
-        mixins: [Class],
-
-        ready() {
-            this.panel = query('!.uk-modal-dialog', this.$el);
-            this.$el.css('min-height', 150);
-        },
-
-        update: {
-
-            write() {
-                var current = this.$el.css('max-height');
-                this.$el.css('max-height', 150).css('max-height', Math.max(150, 150 - (this.panel.outerHeight(true) - window.innerHeight)));
-                if (current !== this.$el.css('max-height')) {
-                    this.$el.trigger('resize');
-                }
-            },
-
-            events: ['load', 'resize', 'orientationchange']
-
-        }
-
-    });
+function install(UIkit) {
 
     UIkit.modal.dialog = function (content, options) {
 
-        var dialog = UIkit.modal(
-            `<div class="uk-modal">
+        const dialog = UIkit.modal(`
+            <div class="uk-modal">
                 <div class="uk-modal-dialog">${content}</div>
-             </div>`
-        , options)[0];
+             </div>
+        `, options);
 
-        requestAnimationFrame(dialog.show);
-        dialog.$el.on('hide', () => dialog.$destroy(true));
+        dialog.show();
+
+        on(dialog.$el, 'hidden', ({target, currentTarget}) => {
+            if (target === currentTarget) {
+                Promise.resolve(() => dialog.$destroy(true));
+            }
+        });
 
         return dialog;
     };
 
     UIkit.modal.alert = function (message, options) {
 
-        options = extend({bgClose: false, escClose: false, labels: UIkit.modal.labels}, options);
+        options = assign({bgClose: false, escClose: false, labels: UIkit.modal.labels}, options);
 
-        return promise(
-            resolve => UIkit.modal.dialog(`
-                <div class="uk-modal-body">${isString(message) ? message : $(message).html()}</div>
+        return new Promise(
+            resolve => on(UIkit.modal.dialog(`
+                <div class="uk-modal-body">${isString(message) ? message : html(message)}</div>
                 <div class="uk-modal-footer uk-text-right">
                     <button class="uk-button uk-button-primary uk-modal-close" autofocus>${options.labels.ok}</button>
                 </div>
-            `, options).$el.on('hide', resolve)
+            `, options).$el, 'hide', resolve)
         );
     };
 
     UIkit.modal.confirm = function (message, options) {
 
-        options = extend({bgClose: false, escClose: false, labels: UIkit.modal.labels}, options);
+        options = assign({bgClose: false, escClose: true, labels: UIkit.modal.labels}, options);
 
-        return promise(
-            (resolve, reject) => UIkit.modal.dialog(`
-                <div class="uk-modal-body">${isString(message) ? message : $(message).html()}</div>
-                <div class="uk-modal-footer uk-text-right">
-                    <button class="uk-button uk-button-default uk-modal-close">${options.labels.cancel}</button>
-                    <button class="uk-button uk-button-primary uk-modal-close" autofocus>${options.labels.ok}</button>
-                </div>
-            `, options).$el.on('click', '.uk-modal-footer button', e => $(e.target).index() === 0 ? reject() : resolve())
-        );
+        return new Promise((resolve, reject) => {
+
+            const confirm = UIkit.modal.dialog(`
+                <form>
+                    <div class="uk-modal-body">${isString(message) ? message : html(message)}</div>
+                    <div class="uk-modal-footer uk-text-right">
+                        <button class="uk-button uk-button-default uk-modal-close" type="button">${options.labels.cancel}</button>
+                        <button class="uk-button uk-button-primary" autofocus>${options.labels.ok}</button>
+                    </div>
+                </form>
+            `, options);
+
+            let resolved = false;
+
+            on(confirm.$el, 'submit', 'form', e => {
+                e.preventDefault();
+                resolve();
+                resolved = true;
+                confirm.hide();
+            });
+            on(confirm.$el, 'hide', () => {
+                if (!resolved) {
+                    reject();
+                }
+            });
+
+        });
     };
 
     UIkit.modal.prompt = function (message, value, options) {
 
-        options = extend({bgClose: false, escClose: false, labels: UIkit.modal.labels}, options);
+        options = assign({bgClose: false, escClose: true, labels: UIkit.modal.labels}, options);
 
-        return promise((resolve, reject) => {
+        return new Promise(resolve => {
 
-            var resolved = false,
-                prompt = UIkit.modal.dialog(`
-                <form class="uk-form-stacked">
-                    <div class="uk-modal-body">
-                        <label>${isString(message) ? message : $(message).html()}</label>
-                        <input class="uk-input" type="text" autofocus>
-                    </div>
-                    <div class="uk-modal-footer uk-text-right">
-                        <button class="uk-button uk-button-default uk-modal-close" type="button">${options.labels.cancel}</button>
-                        <button class="uk-button uk-button-primary" type="submit">${options.labels.ok}</button>
-                    </div>
-                </form>
-            `, options),
-                input = prompt.$el.find('input').val(value);
+            const prompt = UIkit.modal.dialog(`
+                    <form class="uk-form-stacked">
+                        <div class="uk-modal-body">
+                            <label>${isString(message) ? message : html(message)}</label>
+                            <input class="uk-input" autofocus>
+                        </div>
+                        <div class="uk-modal-footer uk-text-right">
+                            <button class="uk-button uk-button-default uk-modal-close" type="button">${options.labels.cancel}</button>
+                            <button class="uk-button uk-button-primary">${options.labels.ok}</button>
+                        </div>
+                    </form>
+                `, options),
+                input = $('input', prompt.$el);
 
-            prompt.$el
-                .on('submit', 'form', e => {
-                    e.preventDefault();
-                    resolve(input.val());
-                    resolved = true;
-                    prompt.hide()
-                })
-                .on('hide', () => {
-                    if (!resolved) {
-                        resolve(null);
-                    }
-                });
+            input.value = value;
+
+            let resolved = false;
+
+            on(prompt.$el, 'submit', 'form', e => {
+                e.preventDefault();
+                resolve(input.value);
+                resolved = true;
+                prompt.hide();
+            });
+            on(prompt.$el, 'hide', () => {
+                if (!resolved) {
+                    resolve(null);
+                }
+            });
 
         });
     };
@@ -186,6 +159,6 @@ export default function (UIkit) {
     UIkit.modal.labels = {
         ok: 'Ok',
         cancel: 'Cancel'
-    }
+    };
 
 }
