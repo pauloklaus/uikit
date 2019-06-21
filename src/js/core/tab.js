@@ -1,27 +1,33 @@
-import { Class } from '../mixin/index';
+import Switcher from './switcher';
+import Class from '../mixin/class';
+import {hasClass} from 'uikit-util';
 
-export default function (UIkit) {
+export default {
 
-    UIkit.component('tab', UIkit.components.switcher.extend({
+    mixins: [Class],
 
-        mixins: [Class],
+    extends: Switcher,
 
-        name: 'tab',
+    props: {
+        media: Boolean
+    },
 
-        defaults: {
-            media: 960,
-            attrItem: 'uk-tab-item'
-        },
+    data: {
+        media: 960,
+        attrItem: 'uk-tab-item'
+    },
 
-        init() {
+    connected() {
 
-            var cls = this.$el.hasClass('uk-tab-left') && 'uk-tab-left' || this.$el.hasClass('uk-tab-right') && 'uk-tab-right';
+        const cls = hasClass(this.$el, 'uk-tab-left')
+            ? 'uk-tab-left'
+            : hasClass(this.$el, 'uk-tab-right')
+                ? 'uk-tab-right'
+                : false;
 
-            if (cls) {
-                UIkit.toggle(this.$el, {cls, mode: 'media', media: this.media});
-            }
+        if (cls) {
+            this.$create('toggle', this.$el, {cls, mode: 'media', media: this.media});
         }
+    }
 
-    }));
-
-}
+};

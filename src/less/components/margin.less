@@ -75,10 +75,10 @@
 .uk-margin-large { margin-bottom: @margin-large-margin; }
 * + .uk-margin-large { margin-top: @margin-large-margin !important; }
 
-.uk-margin-large-top { margin-top: @margin-large-margin!important; }
-.uk-margin-large-bottom { margin-bottom: @margin-large-margin!important; }
-.uk-margin-large-left { margin-left: @margin-large-margin!important; }
-.uk-margin-large-right { margin-right: @margin-large-margin!important; }
+.uk-margin-large-top { margin-top: @margin-large-margin !important; }
+.uk-margin-large-bottom { margin-bottom: @margin-large-margin !important; }
+.uk-margin-large-left { margin-left: @margin-large-margin !important; }
+.uk-margin-large-right { margin-right: @margin-large-margin !important; }
 
 /* Desktop and bigger */
 @media (min-width: @breakpoint-large) {
@@ -119,23 +119,6 @@
 }
 
 
-/* Remove
- ========================================================================== */
-
-.uk-margin-remove { margin: 0 !important; }
-.uk-margin-remove-top { margin-top: 0 !important; }
-.uk-margin-remove-bottom { margin-bottom: 0 !important; }
-.uk-margin-remove-left { margin-left: 0 !important; }
-.uk-margin-remove-right { margin-right: 0 !important; }
-
-.uk-margin-remove-vertical {
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-}
-
-.uk-margin-remove-adjacent + * { margin-top: 0 !important; }
-
-
 /* Auto
  ========================================================================== */
 
@@ -144,6 +127,8 @@
     margin-right: auto !important;
 }
 
+.uk-margin-auto-top { margin-top: auto !important; }
+.uk-margin-auto-bottom { margin-bottom: auto !important; }
 .uk-margin-auto-left { margin-left: auto !important; }
 .uk-margin-auto-right { margin-right: auto !important; }
 
@@ -151,6 +136,110 @@
     margin-top: auto !important;
     margin-bottom: auto !important;
 }
+
+/* Phone landscape and bigger */
+@media (min-width: @breakpoint-small) {
+
+    .uk-margin-auto\@s {
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+
+    .uk-margin-auto-left\@s { margin-left: auto !important; }
+    .uk-margin-auto-right\@s { margin-right: auto !important; }
+
+}
+
+/* Tablet landscape and bigger */
+@media (min-width: @breakpoint-medium) {
+
+    .uk-margin-auto\@m {
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+
+    .uk-margin-auto-left\@m { margin-left: auto !important; }
+    .uk-margin-auto-right\@m { margin-right: auto !important; }
+
+}
+
+/* Desktop and bigger */
+@media (min-width: @breakpoint-large) {
+
+    .uk-margin-auto\@l {
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+
+    .uk-margin-auto-left\@l { margin-left: auto !important; }
+    .uk-margin-auto-right\@l { margin-right: auto !important; }
+
+}
+
+/* Large screen and bigger */
+@media (min-width: @breakpoint-xlarge) {
+
+    .uk-margin-auto\@xl {
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+
+    .uk-margin-auto-left\@xl { margin-left: auto !important; }
+    .uk-margin-auto-right\@xl { margin-right: auto !important; }
+
+}
+
+
+/* Remove
+ ========================================================================== */
+
+ .uk-margin-remove { margin: 0 !important; }
+ .uk-margin-remove-top { margin-top: 0 !important; }
+ .uk-margin-remove-bottom { margin-bottom: 0 !important; }
+ .uk-margin-remove-left { margin-left: 0 !important; }
+ .uk-margin-remove-right { margin-right: 0 !important; }
+ 
+ .uk-margin-remove-vertical {
+     margin-top: 0 !important;
+     margin-bottom: 0 !important;
+ }
+ 
+ .uk-margin-remove-adjacent + *,
+ .uk-margin-remove-first-child > :first-child { margin-top: 0 !important; }
+ .uk-margin-remove-last-child > :last-child { margin-bottom: 0 !important; }
+
+/* Phone landscape and bigger */
+@media (min-width: @breakpoint-small) {
+
+    .uk-margin-remove-left\@s { margin-left: 0 !important; }
+    .uk-margin-remove-right\@s { margin-right: 0 !important; }
+
+}
+
+/* Tablet landscape and bigger */
+@media (min-width: @breakpoint-medium) {
+
+    .uk-margin-remove-left\@m { margin-left: 0 !important; }
+    .uk-margin-remove-right\@m { margin-right: 0 !important; }
+
+}
+
+/* Desktop and bigger */
+@media (min-width: @breakpoint-large) {
+
+    .uk-margin-remove-left\@l { margin-left: 0 !important; }
+    .uk-margin-remove-right\@l { margin-right: 0 !important; }
+
+}
+
+/* Large screen and bigger */
+@media (min-width: @breakpoint-xlarge) {
+
+    .uk-margin-remove-left\@xl { margin-left: 0 !important; }
+    .uk-margin-remove-right\@xl { margin-right: 0 !important; }
+
+}
+
 
 
 // Hooks

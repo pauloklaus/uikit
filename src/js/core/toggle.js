@@ -1,103 +1,115 @@
-import { $, hasTouch } from '../util/index';
+import Media from '../mixin/media';
+import Togglable from '../mixin/togglable';
+import {closest, hasTouch, includes, isTouch, isVisible, matches, pointerEnter, pointerLeave, queryAll, trigger} from 'uikit-util';
 
-export default function (UIkit) {
+export default {
 
-    UIkit.component('toggle', {
+    mixins: [Media, Togglable],
 
-        mixins: [UIkit.mixin.toggable],
+    args: 'target',
 
-        args: 'target',
+    props: {
+        href: String,
+        target: null,
+        mode: 'list'
+    },
 
-        props: {
-            href: 'jQuery',
-            target: 'jQuery',
-            mode: String,
-            media: 'media'
-        },
+    data: {
+        href: false,
+        target: false,
+        mode: 'click',
+        queued: true
+    },
 
-        defaults: {
-            href: false,
-            target: false,
-            mode: 'click',
-            queued: true,
-            media: false
-        },
+    computed: {
 
-        init() {
-            this.mode = hasTouch && this.mode == 'hover' ? 'click' : this.mode;
-        },
+        target({href, target}, $el) {
+            target = queryAll(target || href, $el);
+            return target.length && target || [$el];
+        }
 
-        events: [
+    },
 
-            {
+    connected() {
+        trigger(this.target, 'updatearia', [this]);
+    },
 
-                name: 'mouseenter mouseleave',
+    events: [
 
-                filter() {
-                    return this.mode === 'hover';
-                },
+        {
 
-                handler({type}) {
-                    this.toggle(type === 'mouseenter' ? 'toggleShow' : 'toggleHide');
-                }
+            name: `${pointerEnter} ${pointerLeave}`,
 
+            filter() {
+                return includes(this.mode, 'hover');
             },
 
-            {
-
-                name: 'click',
-
-                filter() {
-                    return this.mode !== 'media';
-                },
-
-                handler(e) {
-                    // TODO better isToggled handling
-                    if ($(e.target).closest('a[href="#"], button').length || $(e.target).closest('a[href]') && (this.cls || !this.target.is(':visible'))) {
-                        e.preventDefault();
-                    }
-
-                    this.toggle();
+            handler(e) {
+                if (!isTouch(e)) {
+                    this.toggle(`toggle${e.type === pointerEnter ? 'show' : 'hide'}`);
                 }
-
             }
-        ],
-
-        update: {
-
-            write() {
-
-                this.target = this.target || this.href || this.$el;
-
-                if (this.mode !== 'media' || !this.media) {
-                    return;
-                }
-
-                var toggled = this.isToggled(this.target);
-                if (window.matchMedia(this.media).matches ? !toggled : toggled) {
-                    this.toggle();
-                }
-
-            },
-
-            events: ['load', 'resize', 'orientationchange']
 
         },
 
-        methods: {
+        {
 
-            toggle(type) {
+            name: 'click',
 
-                var event = $.Event(type || 'toggle');
-                this.target.triggerHandler(event, [this]);
+            filter() {
+                return includes(this.mode, 'click') || hasTouch && includes(this.mode, 'hover');
+            },
 
-                if (!event.isDefaultPrevented()) {
-                    this.toggleElement(this.target);
+            handler(e) {
+
+                // TODO better isToggled handling
+                let link;
+                if (closest(e.target, 'a[href="#"], a[href=""]')
+                    || (link = closest(e.target, 'a[href]')) && (
+                        this.cls
+                        || !isVisible(this.target)
+                        || link.hash && matches(this.target, link.hash)
+                    )
+                ) {
+                    e.preventDefault();
                 }
+
+                this.toggle();
             }
 
         }
 
-    });
+    ],
 
-}
+    update: {
+
+        read() {
+            return includes(this.mode, 'media') && this.media
+                ? {match: this.matchMedia}
+                : false;
+        },
+
+        write({match}) {
+
+            const toggled = this.isToggled(this.target);
+            if (match ? !toggled : toggled) {
+                this.toggle();
+            }
+
+        },
+
+        events: ['resize']
+
+    },
+
+    methods: {
+
+        toggle(type) {
+            if (trigger(this.target, type || 'toggle', [this])) {
+                this.toggleElement(this.target);
+            }
+        }
+
+    }
+
+};

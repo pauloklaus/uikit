@@ -1,67 +1,60 @@
-import { Class } from '../mixin/index';
-import { Dimensions } from '../util/index';
+import Video from './video';
+import Class from '../mixin/class';
+import {css, Dimensions, isVisible} from 'uikit-util';
 
-export default function (UIkit) {
+export default {
 
-    UIkit.component('cover', {
+    mixins: [Class, Video],
 
-        mixins: [Class],
+    props: {
+        width: Number,
+        height: Number
+    },
 
-        props: {
-            automute: Boolean,
-            width: Number,
-            height: Number
+    data: {
+        automute: true
+    },
+
+    update: {
+
+        read() {
+
+            const el = this.$el;
+
+            if (!isVisible(el)) {
+                return false;
+            }
+
+            const {offsetHeight: height, offsetWidth: width} = el.parentNode;
+
+            return {height, width};
         },
 
-        defaults: {automute: true},
+        write({height, width}) {
 
-        ready() {
+            const el = this.$el;
+            const elWidth = this.width || el.naturalWidth || el.videoWidth || el.clientWidth;
+            const elHeight = this.height || el.naturalHeight || el.videoHeight || el.clientHeight;
 
-            if (!this.$el.is('iframe')) {
+            if (!elWidth || !elHeight) {
                 return;
             }
 
-            this.$el.css('pointerEvents', 'none');
-
-            if (this.automute) {
-
-                var src = this.$el.attr('src');
-
-                this.$el
-                    .attr('src', `${src}${~src.indexOf('?') ? '&' : '?'}enablejsapi=1&api=1`)
-                    .on('load', ({target}) => target.contentWindow.postMessage('{"event": "command", "func": "mute", "method":"setVolume", "value":0}', '*'));
-            }
-        },
-
-        update: {
-
-            write() {
-
-                if (this.$el[0].offsetHeight === 0) {
-                    return;
+            css(el, Dimensions.cover(
+                {
+                    width: elWidth,
+                    height: elHeight
+                },
+                {
+                    width: width + (width % 2 ? 1 : 0),
+                    height: height + (height % 2 ? 1 : 0)
                 }
-
-                this.$el
-                    .css({width: '', height: ''})
-                    .css(Dimensions.cover(
-                        {width: this.width || this.$el.width(), height: this.height || this.$el.height()},
-                        {width: this.$el.parent().outerWidth(), height: this.$el.parent().outerHeight()}
-                    ));
-
-            },
-
-            events: ['load', 'resize', 'orientationchange']
+            ));
 
         },
 
-        events: {
+        events: ['resize']
 
-            loadedmetadata() {
-                this.$emit();
-            }
+    }
 
-        }
-
-    });
-
-}
+};

@@ -1,48 +1,69 @@
-import { $, camelize, isPlainObject } from '../util/index';
+import {$$, assign, camelize, fastdom, hyphenate, isPlainObject, startsWith} from 'uikit-util';
 
 export default function (UIkit) {
 
     const DATA = UIkit.data;
 
-    UIkit.components = {};
+    const components = {};
 
-    UIkit.component = function (id, options) {
+    UIkit.component = function (name, options) {
 
-        var name = camelize(id);
+        if (!options) {
 
-        if (isPlainObject(options)) {
-            options.name = name;
-            options = UIkit.extend(options);
-        } else {
-            options.options.name = name;
+            if (isPlainObject(components[name])) {
+                components[name] = UIkit.extend(components[name]);
+            }
+
+            return components[name];
+
         }
-
-        UIkit.components[name] = options;
 
         UIkit[name] = function (element, data) {
 
+            const component = UIkit.component(name);
+
             if (isPlainObject(element)) {
-                return new UIkit.components[name]({data: element});
+                return new component({data: element});
             }
 
-            if (UIkit.components[name].options.functional) {
-                return new UIkit.components[name]({data: [...arguments]});
+            if (component.options.functional) {
+                return new component({data: [...arguments]});
             }
 
-            var result = [];
+            return element && element.nodeType ? init(element) : $$(element).map(init)[0];
 
-            data = data || {};
+            function init(element) {
 
-            $(element).each((i, el) => result.push(el[DATA] && el[DATA][name] || new UIkit.components[name]({el, data})));
+                const instance = UIkit.getComponent(element, name);
 
-            return result;
+                if (instance) {
+                    if (!data) {
+                        return instance;
+                    } else {
+                        instance.$destroy();
+                    }
+                }
+
+                return new component({el: element, data});
+
+            }
+
         };
 
-        if (document.body && !options.options.functional) {
-            UIkit[name](`[uk-${id}],[data-uk-${id}]`);
+        const opt = isPlainObject(options) ? assign({}, options) : options.options;
+
+        opt.name = name;
+
+        if (opt.install) {
+            opt.install(UIkit, opt, name);
         }
 
-        return UIkit.components[name];
+        if (UIkit._initialized && !opt.functional) {
+            const id = hyphenate(name);
+            fastdom.read(() => UIkit[name](`[uk-${id}],[data-uk-${id}]`));
+        }
+
+        return components[name] = isPlainObject(options) ? opt : options;
     };
 
     UIkit.getComponents = element => element && element[DATA] || {};
@@ -50,34 +71,34 @@ export default function (UIkit) {
 
     UIkit.connect = node => {
 
-        var name;
-
         if (node[DATA]) {
-            for (name in node[DATA]) {
+            for (const name in node[DATA]) {
                 node[DATA][name]._callConnected();
             }
         }
 
-        for (var i = 0; i < node.attributes.length; i++) {
+        for (let i = 0; i < node.attributes.length; i++) {
 
-            name = node.attributes[i].name;
+            const name = getComponentName(node.attributes[i].name);
 
-            if (name.lastIndexOf('uk-', 0) === 0 || name.lastIndexOf('data-uk-', 0) === 0) {
-
-                name = camelize(name.replace('data-uk-', '').replace('uk-', ''));
-
-                if (UIkit[name]) {
-                    UIkit[name](node);
-                }
+            if (name && name in components) {
+                UIkit[name](node);
             }
+
         }
 
     };
 
     UIkit.disconnect = node => {
-        for (var name in node[DATA]) {
+        for (const name in node[DATA]) {
             node[DATA][name]._callDisconnected();
         }
-    }
+    };
 
+}
+
+export function getComponentName(attribute) {
+    return startsWith(attribute, 'uk-') || startsWith(attribute, 'data-uk-')
+        ? camelize(attribute.replace('data-uk-', '').replace('uk-', ''))
+        : false;
 }

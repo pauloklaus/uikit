@@ -1,10 +1,11 @@
 import globalAPI from './global';
-import internalAPI from './internal';
+import hooksAPI from './hooks';
+import stateAPI from './state';
 import instanceAPI from './instance';
 import componentAPI from './component';
-import * as util from '../util/index';
+import * as util from 'uikit-util';
 
-var UIkit = function (options) {
+const UIkit = function (options) {
     this._init(options);
 };
 
@@ -12,12 +13,11 @@ UIkit.util = util;
 UIkit.data = '__uikit__';
 UIkit.prefix = 'uk-';
 UIkit.options = {};
-UIkit.instances = {};
-UIkit.elements = [];
 
 globalAPI(UIkit);
-internalAPI(UIkit);
-instanceAPI(UIkit);
+hooksAPI(UIkit);
+stateAPI(UIkit);
 componentAPI(UIkit);
+instanceAPI(UIkit);
 
 export default UIkit;
